@@ -13,6 +13,14 @@ import (
 
 var ErrUnparsableCustom = errors.New("unparsable custom type")
 
+// ParseCustom parses a custom value based on its type.
+// It takes a string value and a reflect.Value representing the custom type.
+// It returns the parsed value as an interface{} and an error if parsing fails.
+// The function supports parsing the following types:
+// - time.Duration: Parses the string value as a time duration.
+// - time.Time: Parses the string value as a time in the format "2006-01-02T15:04:05Z07:00".
+// - url.URL: Parses the string value as a URL.
+// If the type is not supported, it returns nil and an error of type ErrUnparsableCustom.
 func ParseCustom(v string, vValue reflect.Value) (interface{}, error) {
 	switch vValue.Interface().(type) {
 	case time.Duration:
@@ -22,6 +30,7 @@ func ParseCustom(v string, vValue reflect.Value) (interface{}, error) {
 	case url.URL:
 		v, err := url.Parse(v)
 		return *v, err
+
 	default:
 		return nil, ErrUnparsableCustom
 	}
@@ -86,10 +95,11 @@ func Parse(data any) {
 		deep(paths, vValue, value, vType)
 	}
 }
-func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type) {
+func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type) reflect.Value {
 	for _, path := range paths {
 		for i := 0; i < vValue.NumField(); i++ {
-			if strings.ToUpper(vType.Field(i).Name) != path {
+			name := vType.Field(i).Name
+			if strings.ToUpper(name) != path {
 				continue
 			}
 			field := vValue.Field(i)
@@ -97,11 +107,10 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 				if !reflect.Indirect(field).IsValid() {
 					t := reflect.New(field.Type().Elem())
 					vValue.Field(i).Set(t)
-					deep(paths[1:], t.Elem(), value, t.Elem().Type())
-					return
+					return deep(paths[1:], t.Elem(), value, t.Elem().Type())
 				}
-				deep(paths, reflect.Indirect(field), value, vType)
-				return
+				return deep(paths[1:], reflect.Indirect(field), value, vType)
+
 			}
 			if field.Kind() == reflect.Struct {
 				iVType := field.Type()
@@ -111,16 +120,39 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 					continue
 				}
 				vValue.Field(i).Set(reflect.ValueOf(parsedValue))
-				return
+				return vValue
 			}
 			if field.Kind() == reflect.Map {
-				continue
+				//TODO key exists
+				if field.IsNil() {
+					field.Set(reflect.MakeMap(field.Type()))
+				}
+				if len(paths) > 2 {
+					newValue := reflect.New(reflect.Indirect(field).Type().Elem())
+					deep(paths[2:], newValue.Elem(), value, vType)
+					field.SetMapIndex(reflect.ValueOf(strings.ToLower(paths[1])), newValue.Elem())
+					return newValue
+				}
+
+				parsedValue, err := ParseCustom(value, field)
+				if errors.Is(err, ErrUnparsableCustom) {
+					parsedValue, err := ParsePrimitive(value, reflect.ValueOf(""))
+					if err != nil {
+						return field
+					}
+					if len(paths) > 0 {
+						field.SetMapIndex(reflect.ValueOf(strings.ToLower(paths[1])), reflect.ValueOf(parsedValue))
+					}
+					return field
+				}
+				field.SetMapIndex(reflect.ValueOf(strings.ToLower(paths[1])), reflect.ValueOf(parsedValue))
+				return field
 			}
 			if field.Kind() == reflect.Slice {
 				if len(paths) > 1 {
 					index, err := strconv.Atoi(paths[1])
 					if err != nil {
-						return
+						return field
 					}
 					if field.Len() == 0 {
 						fmt.Println(index)
@@ -133,14 +165,19 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 			if errors.Is(err, ErrUnparsableCustom) {
 				parsedValue, err = ParsePrimitive(value, field)
 				if err != nil {
-					return
+					return vValue
 				}
-				vValue.Field(i).Set(reflect.ValueOf(parsedValue))
+				resultValue := reflect.ValueOf(parsedValue)
+				field.Set(resultValue)
+				return resultValue
 			}
 			if err != nil {
-				return
+				return vValue
 			}
-			vValue.Field(i).Set(reflect.ValueOf(parsedValue))
+			resultValue := reflect.ValueOf(parsedValue)
+			field.Set(resultValue)
+			return resultValue
 		}
 	}
+	return vValue
 }

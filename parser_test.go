@@ -9,20 +9,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Case2 struct {
-	Field2 string
-}
+const (
+	defaultStringResult = "RESULT"
+)
 
+type Level1 struct {
+	FieldString string
+}
+type Level2 struct {
+	FieldStruct        Level1
+	FieldStructPointer *Level1
+}
 type Case1 struct {
-	Field1              string
-	Field2              float32
-	BoolCase            bool
-	Field3Duration      time.Duration
-	Field4Time          time.Time
-	Field3Struct        Case2
-	Field3StructPointer *Case2
-	Fields              []Case2
-	UrlCase             url.URL
+	FieldString             string
+	FieldFloat32            float32
+	FieldBool               bool
+	FieldDuration           time.Duration
+	FieldTime               time.Time
+	FieldStruct             Level1
+	FieldStructPointer      *Level1
+	Fields                  []Level1
+	FieldUrl                url.URL
+	FieldMap                map[string]string
+	FieldMapStruct          map[string]Level1
+	FieldInnerStructPointer *Level2
+	FieldInnerStruct        Level2
 }
 
 func TestParse(t *testing.T) {
@@ -31,72 +42,108 @@ func TestParse(t *testing.T) {
 		init  func() *Case1
 		check func(t *testing.T, value *Case1)
 	}{
+		{"Struct inner pointer without init level 2 check", func() *Case1 {
+			os.Setenv("FieldInnerStructPointer_FieldStructPointer_FieldString", defaultStringResult)
+			data := new(Case1)
+			return data
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, defaultStringResult, value.FieldInnerStructPointer.FieldStructPointer.FieldString)
+		}},
+		{"Struct inner with init level 2 check", func() *Case1 {
+			os.Setenv("FieldInnerStruct_FieldStruct_FieldString", defaultStringResult)
+			data := new(Case1)
+			return data
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, defaultStringResult, value.FieldInnerStruct.FieldStruct.FieldString)
+		}},
 		{"String check", func() *Case1 {
-			os.Setenv("FIELD1", "RESULT")
+			os.Setenv("FieldString", defaultStringResult)
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, "RESULT", value.Field1)
+			assert.Equal(t, defaultStringResult, value.FieldString)
 		}},
 		{"bool check", func() *Case1 {
-			os.Setenv("BoolCase", "true")
+			os.Setenv("FieldBool", "true")
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, true, value.BoolCase)
+			assert.Equal(t, true, value.FieldBool)
 		}},
-		{"Relplace check", func() *Case1 {
-			os.Setenv("FIELD1", "RESULT")
+		{"Replace check", func() *Case1 {
+			os.Setenv("FieldString", defaultStringResult)
 			data := new(Case1)
-			data.Field1 = "NotResult"
+			data.FieldString = "NotResult"
 			return data
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, value.Field1, "RESULT")
+			assert.Equal(t, value.FieldString, defaultStringResult)
 		}},
 		{"Float check", func() *Case1 {
-			os.Setenv("FIELD2", "0.1")
+			os.Setenv("FieldFloat32", "0.1")
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, float32(0.1), value.Field2)
+			assert.Equal(t, float32(0.1), value.FieldFloat32)
 		}},
 		{"Struct level 1 check", func() *Case1 {
-			os.Setenv("FIELD3STRUCT_FIELD2", "RESULT")
+			os.Setenv("FieldStruct_FieldString", defaultStringResult)
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, "RESULT", value.Field3Struct.Field2)
+			assert.Equal(t, defaultStringResult, value.FieldStruct.FieldString)
 		}},
 		{"Struct pointer without init level 1 check", func() *Case1 {
-			os.Setenv("Field3StructPointer_FIELD2", "RESULT")
+			os.Setenv("FieldStructPointer_FieldString", defaultStringResult)
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, "RESULT", value.Field3StructPointer.Field2)
+			assert.Equal(t, defaultStringResult, value.FieldStructPointer.FieldString)
 		}},
 		{"Struct pointer with init level 1 check", func() *Case1 {
-			os.Setenv("Field3StructPointer_FIELD2", "RESULT")
+			os.Setenv("FieldStructPointer_FieldString", defaultStringResult)
 			data := new(Case1)
-			data.Field3StructPointer = new(Case2)
+			data.FieldStructPointer = new(Level1)
 			return data
 		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, "RESULT", value.Field3Struct.Field2)
+			assert.Equal(t, defaultStringResult, value.FieldStructPointer.FieldString)
 		}},
 		{"Check time parse", func() *Case1 {
-			os.Setenv("Field4Time", "2006-01-02 15:04:05")
+			os.Setenv("FieldTime", "2006-01-02 15:04:05")
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
 			data, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
-			assert.Equal(t, data, value.Field4Time)
+			assert.Equal(t, data, value.FieldTime)
 		}},
 		{"Check duration parse", func() *Case1 {
-			os.Setenv("Field3Duration", "10s")
+			os.Setenv("FieldDuration", "10s")
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
 			dur, _ := time.ParseDuration("10s")
-			assert.Equal(t, dur, value.Field3Duration)
+			assert.Equal(t, dur, value.FieldDuration)
 		}},
 		{"Check url parse", func() *Case1 {
-			os.Setenv("URLCASE", "http://localhost:10001")
+			os.Setenv("FieldUrl", "http://localhost:10001")
 			return new(Case1)
 		}, func(t *testing.T, value *Case1) {
 			dur, _ := url.Parse("http://localhost:10001")
-			assert.Equal(t, *dur, value.UrlCase)
+			assert.Equal(t, *dur, value.FieldUrl)
+		}},
+		{"Check map parse with nil", func() *Case1 {
+			os.Setenv("FieldMap_Key", defaultStringResult)
+			return new(Case1)
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, value.FieldMap["key"], defaultStringResult)
+		}},
+		{"Check map parse", func() *Case1 {
+			os.Setenv("FieldMap_Key", defaultStringResult)
+			case1 := new(Case1)
+			case1.FieldMap = make(map[string]string)
+			return case1
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, value.FieldMap["key"], defaultStringResult)
+		}},
+		{"Check map parse struct", func() *Case1 {
+			os.Setenv("FieldMapStruct_Key_FieldString", defaultStringResult)
+			case1 := new(Case1)
+			case1.FieldMapStruct = make(map[string]Level1)
+			return case1
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, value.FieldMapStruct["key"].FieldString, defaultStringResult)
 		}},
 	}
 	for _, tt := range tests {
