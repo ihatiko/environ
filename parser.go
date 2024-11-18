@@ -21,7 +21,7 @@ var ErrUnparsableCustom = errors.New("unparsable custom type")
 // - time.Time: Parses the string value as a time in the format "2006-01-02T15:04:05Z07:00".
 // - url.URL: Parses the string value as a URL.
 // If the type is not supported, it returns nil and an error of type ErrUnparsableCustom.
-func ParseCustom(v string, vValue reflect.Value) (interface{}, error) {
+func ParseCustom(v string, vValue reflect.Value) (any, error) {
 	switch vValue.Interface().(type) {
 	case time.Duration:
 		return time.ParseDuration(v)
@@ -36,7 +36,7 @@ func ParseCustom(v string, vValue reflect.Value) (interface{}, error) {
 	}
 }
 
-func ParsePrimitive(v string, vValue reflect.Value) (interface{}, error) {
+func ParsePrimitive(v string, vValue reflect.Value) (any, error) {
 	switch vValue.Kind() {
 	case reflect.Bool:
 		return strconv.ParseBool(v)

@@ -205,18 +205,6 @@ func TestParse(t *testing.T) {
 		}, func(t *testing.T, value *Case1) {
 			assert.Equal(t, value.FieldMapStruct["key"].FieldString, defaultStringResult)
 		}},
-		{"Check map parse struct", func() *Case1 {
-			err := os.Setenv("FieldMapStruct_Key_FieldString", defaultStringResult)
-			if err != nil {
-				assert.Error(t, err)
-				return nil
-			}
-			case1 := new(Case1)
-			case1.FieldMapStruct = make(map[string]Level1)
-			return case1
-		}, func(t *testing.T, value *Case1) {
-			assert.Equal(t, value.FieldMapStruct["key"].FieldString, defaultStringResult)
-		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
