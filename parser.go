@@ -14,7 +14,7 @@ import (
 var ErrUnparsableCustom = errors.New("unparsable custom type")
 
 // ParseCustom parses a custom value based on its type.
-// It takes a string value and a reflect.Value representing the custom type.
+// It takes a string value and an r.Value representing the custom type.
 // It returns the parsed value as an interface{} and an error if parsing fails.
 // The function supports parsing the following types:
 // - time.Duration: Parses the string value as a time duration.
@@ -35,6 +35,7 @@ func ParseCustom(v string, vValue reflect.Value) (interface{}, error) {
 		return nil, ErrUnparsableCustom
 	}
 }
+
 func ParsePrimitive(v string, vValue reflect.Value) (interface{}, error) {
 	switch vValue.Kind() {
 	case reflect.Bool:
@@ -136,12 +137,12 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 
 				parsedValue, err := ParseCustom(value, field)
 				if errors.Is(err, ErrUnparsableCustom) {
-					parsedValue, err := ParsePrimitive(value, reflect.ValueOf(""))
+					parsedPrimitiveValue, err := ParsePrimitive(value, reflect.ValueOf(""))
 					if err != nil {
 						return field
 					}
 					if len(paths) > 0 {
-						field.SetMapIndex(reflect.ValueOf(strings.ToLower(paths[1])), reflect.ValueOf(parsedValue))
+						field.SetMapIndex(reflect.ValueOf(strings.ToLower(paths[1])), reflect.ValueOf(parsedPrimitiveValue))
 					}
 					return field
 				}

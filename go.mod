@@ -1,4 +1,4 @@
-module github.com/ihatiko/environ
+module github.com/ihatiko/components/utils/environ
 
 go 1.22
 
