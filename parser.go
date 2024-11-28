@@ -96,6 +96,8 @@ func Parse(data any) {
 		deep(paths, vValue, value, vType)
 	}
 }
+
+// TODO return error
 func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type) reflect.Value {
 	for _, path := range paths {
 		for i := 0; i < vValue.NumField(); i++ {
@@ -113,6 +115,7 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 				return deep(paths[1:], reflect.Indirect(field), value, vType)
 
 			}
+			//TODO err add
 			if field.Kind() == reflect.Struct {
 				iVType := field.Type()
 				parsedValue, err := ParseCustom(value, field)
