@@ -81,6 +81,8 @@ func ParsePrimitive(v string, vValue reflect.Value) (any, error) {
 	}
 }
 
+var splitLexer = "."
+
 func Parse(data any) {
 	values := os.Environ()
 	vValue := reflect.Indirect(reflect.ValueOf(data))
@@ -92,7 +94,7 @@ func Parse(data any) {
 		}
 		name := strings.ToUpper(fragments[0])
 		value := fragments[1]
-		paths := strings.Split(name, "_")
+		paths := strings.Split(name, splitLexer)
 		deep(paths, vValue, value, vType)
 	}
 }
