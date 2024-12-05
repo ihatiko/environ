@@ -34,6 +34,7 @@ type Case1 struct {
 	FieldMapStruct          map[string]Level1
 	FieldInnerStructPointer *Level2
 	FieldInnerStruct        Level2
+	FieldSliceString        []string
 }
 
 func TestParse(t *testing.T) {
@@ -204,6 +205,17 @@ func TestParse(t *testing.T) {
 			return case1
 		}, func(t *testing.T, value *Case1) {
 			assert.Equal(t, value.FieldMapStruct["key"].FieldString, defaultStringResult)
+		}},
+		{"Check slice parse struct", func() *Case1 {
+			case1 := new(Case1)
+			err := os.Setenv("FieldSliceString_0", defaultStringResult)
+			if err != nil {
+				assert.Error(t, err)
+				return nil
+			}
+			return case1
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, value.FieldSliceString[0], defaultStringResult)
 		}},
 	}
 	for _, tt := range tests {

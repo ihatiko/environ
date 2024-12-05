@@ -155,17 +155,29 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 				return field
 			}
 			if field.Kind() == reflect.Slice {
-				if len(paths) > 1 {
-					index, err := strconv.Atoi(paths[1])
+				parsedValue, err := ParseCustom(value, field)
+				if errors.Is(err, ErrUnparsableCustom) {
+					parsedPrimitiveValue, err := ParsePrimitive(value, reflect.ValueOf(""))
 					if err != nil {
 						return field
 					}
-					if field.Len() == 0 {
-
-						fmt.Println(index)
+					if len(paths) > 1 {
+						index, err := strconv.Atoi(paths[1])
+						if err != nil {
+							return field
+						}
+						if field.Len() == 0 {
+							field.Set(reflect.MakeSlice(field.Type(), 0, 0))
+							if index == 0 {
+								slice := reflect.Append(field, reflect.ValueOf(parsedPrimitiveValue))
+								field.Set(slice)
+							}
+						}
 					}
+					return field
 				}
-
+				//TODO кейсы для работы с индексом и работа с кастом типом
+				fmt.Println(parsedValue)
 				continue
 			}
 			parsedValue, err := ParseCustom(value, field)
