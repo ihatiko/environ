@@ -161,6 +161,7 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 						return field
 					}
 					if field.Len() == 0 {
+
 						fmt.Println(index)
 					}
 				}
