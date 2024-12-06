@@ -217,6 +217,17 @@ func TestParse(t *testing.T) {
 		}, func(t *testing.T, value *Case1) {
 			assert.Equal(t, value.FieldSliceString[0], defaultStringResult)
 		}},
+		{"Check slice parse struct", func() *Case1 {
+			case1 := new(Case1)
+			err := os.Setenv("FieldSliceString_1", defaultStringResult)
+			if err != nil {
+				assert.Error(t, err)
+				return nil
+			}
+			return case1
+		}, func(t *testing.T, value *Case1) {
+			assert.Equal(t, value.FieldSliceString[1], defaultStringResult)
+		}},
 	}
 	for _, tt := range tests {
 		splitLexer = "_"

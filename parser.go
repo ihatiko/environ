@@ -173,6 +173,13 @@ func deep(paths []string, vValue reflect.Value, value string, vType reflect.Type
 								field.Set(slice)
 							}
 						}
+						if index+1 > field.Len() {
+							diff := index + 1 - field.Len()
+							for range diff - 1 {
+								slice := reflect.Append(field, reflect.ValueOf(parsedPrimitiveValue))
+								field.Set(slice)
+							}
+						}
 					}
 					return field
 				}
